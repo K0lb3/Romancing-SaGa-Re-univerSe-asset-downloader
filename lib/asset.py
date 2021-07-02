@@ -110,7 +110,9 @@ def export_obj(obj, fp: str, append_name: bool = False) -> list:
                     else script.m_ClassName
                 )
                 if append_name:
-                    fp = os.path.join(os.path.dirname(fp), name)
+                    new_fp = os.path.join(os.path.dirname(fp), name)
+                    if len(new_fp) + len(extension) < 256:
+                        fp = new_fp
                 extension = ".json"
                 export = json.dumps(
                     obj.read_typetree(nodes), indent=4, ensure_ascii=False
@@ -121,8 +123,10 @@ def export_obj(obj, fp: str, append_name: bool = False) -> list:
                 export = data.raw_data
 
     if export:
-        with open(f"{fp}{extension}", "wb") as f:
-            f.write(export)
+        fp = f"{fp}{extension}"
+        if len(fp) < (256):
+            with open(fp, "wb") as f:
+                f.write(export)
 
     # non-streamlineable types
     if obj.type == "Sprite":
