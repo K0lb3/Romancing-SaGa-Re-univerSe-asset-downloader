@@ -29,7 +29,10 @@ def update_apk_monobehaviours(path: str, qooapp_id: int):
     # extract monobehaviours from apk
     for obj in env.objects:
         if obj.type.name == "MonoBehaviour":
-            export_obj(obj, MONOS, True)
+            try:
+                export_obj(obj, MONOS, True)
+            except Exception as e:
+                print(f"Failed to extract obj {obj.path_id} - {e}")
     unity_f.close()
     zipf.close()
     apk_stream.close()

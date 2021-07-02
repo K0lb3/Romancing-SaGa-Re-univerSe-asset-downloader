@@ -1,7 +1,9 @@
 # Romancing SaGa Re;univerSe asset downloader
 
-A small project that downloads all assets of Romancing SaGa Re;univerSe and extracts them while it's at it.
+A small project that downloads all assets as well as the masterdata of Romancing SaGa Re;univerSe and extracts them while it's at it.
 
+The script updates the assets and even its own parameters on its own,
+so all you have to do is execute the download_assets.py script after every update to get the latest files.
 
 ## Script Requirements
 

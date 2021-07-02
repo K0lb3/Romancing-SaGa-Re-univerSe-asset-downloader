@@ -17,24 +17,30 @@ os.makedirs(ASSETS, exist_ok=True)
 
 VERSIONS = [
     [
+        # game version, important for GameSettings.json
         "gl",
+        # game host, hardcoded - il2cpp dumper -> stringliteral.json
         "production-api.rs-eu.aktsk.com",
+        # apk name, check the url of the playstore
         "com.square_enix.android_googleplay.RSRSWW",
-        "https://d22uketudusdsv.cloudfront.net",  # TODO: queried from the main server as well
+        # asset host, hardcoded - il2cpp dumper -> stringliteral.json
+        "https://d22uketudusdsv.cloudfront.net",
+        # qooapp id, check the url of qoapp
         12451,
     ],
-    # [
-    #    "jp",
-    #    "https://production-api.rs.aktsk.jp",
-    #    "com.square_enix.android_googleplay.RSRS",
-    #    "TODO",
-    #    6927
-    # ],
+    [
+       "jp",
+       "production-api.rs.aktsk.jp",
+       "com.square_enix.android_googleplay.RSRS",
+       "https://d1mur7djiqqbjs.cloudfront.net",
+       6927
+    ],
 ]
 
 
 def main():
-    update_version(*VERSIONS[0])
+    for ver in VERSIONS:
+        update_version(*ver)
 
 
 def update_version(version: str, host: str, apk: str, asset_host: str, qooapp_id: int):
@@ -66,17 +72,16 @@ def update_version(version: str, host: str, apk: str, asset_host: str, qooapp_id
 
     versions = res.json()
 
-    # TODO - master_version from status doesn't work
-    # update_assets(
-    #    path,
-    #    f"{asset_host}/AssetBundles/en/Android/masterdata/{versions['master_version']}",
-    #    "masterdata",
-    # )
+    update_assets(
+       path,
+       f"{asset_host}/AssetBundles/{'en/' if version == 'gl' else ''}Android/masterdata/{versions['master_version']}",
+       "masterdata",
+    )
 
     # normal assets
     update_assets(
         path,
-        f"{asset_host}/AssetBundles/en/Android/{versions['assets_version']}",
+        f"{asset_host}/AssetBundles/{'en/' if version == 'gl' else ''}Android/{versions['assets_version']}",
         "Android",
     )
 
@@ -144,25 +149,14 @@ def get_path(path, name):
 def query_api_version(host: str, version_hash: str):
     url = f"https://{host}/status"
     headers = {
+        "User-Agent": "BestHTTP",
+        "Connection": "TE",
         "Content-Type": "application/json",
         "X-Mikoto-Client-Version": version_hash,
-        "Connection": "TE",
-        "TE": "identity",
-        "User-Agent": "BestHTTP",
+        "X-Mikoto-Platform": "android",
+        "TE": "identity"
     }
-    headers = {
-        "Content-Type": "application/json",
-        "X-Mikoto-Request-Id": "7f33bd72-f490-4938-a215-db093ff009de",
-        "X-Mikoto-Client-Version": version_hash,
-        "X-Mikoto-Platform": "Android",
-        # "X-Mikoto-Device-Secret": self.secret,
-        # "X-Mikoto-Device-UUID": self.udid,
-        "X-Mikoto-Device-Model": "iPad7,5 iOS 13.3.1",
-        "Connection": "TE",
-        "TE": "identity",
-        "User-Agent": "BestHTTP",
-    }
-    return requests.get(url, headers=headers)
+    return requests.post(url, headers=headers)
 
 
 if __name__ == "__main__":
