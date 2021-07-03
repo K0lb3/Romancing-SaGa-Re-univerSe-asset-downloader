@@ -9,7 +9,7 @@ so all you have to do is execute the download_assets.py script after every updat
 
 - Python 3.6+
 
-- UnityPy 1.7.7
+- UnityPy 1.7.8
 - requests
 
 ```cmd

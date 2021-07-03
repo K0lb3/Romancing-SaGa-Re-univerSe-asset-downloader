@@ -1,6 +1,6 @@
 from urllib import request
 import requests
-import UnityPy  # 1.7.7
+import UnityPy  # 1.7.8
 import re
 import os
 import json
