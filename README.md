@@ -23,3 +23,7 @@ Run ``download_assets.py`` to download the latest updates.
 This script also directly extracts the downloaded assets.
 The results are stored by default in ``/assets``
 
+## Texture Coloring
+
+Some textures, like those of the characters, use color palettes.
+The script color_textures.py applies the given palette to each base image of the character.
