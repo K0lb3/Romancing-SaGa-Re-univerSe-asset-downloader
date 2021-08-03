@@ -13,7 +13,7 @@ so all you have to do is execute the download_assets.py script after every updat
 - requests
 
 ```cmd
-pip install UnityPy==1.7.7
+pip install UnityPy==1.7.9
 pip install requests
 ```
 
