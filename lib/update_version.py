@@ -32,7 +32,8 @@ def update_apk_monobehaviours(path: str, qooapp_id: int):
             try:
                 export_obj(obj, MONOS, True)
             except Exception as e:
-                print(f"Failed to extract obj {obj.path_id} - {e}")
+                pass
+                #print(f"Failed to extract obj {obj.path_id} - {e}")
     unity_f.close()
     zipf.close()
     apk_stream.close()
