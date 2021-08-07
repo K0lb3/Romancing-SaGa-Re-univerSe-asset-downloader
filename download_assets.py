@@ -98,7 +98,7 @@ def update_assets(path: str, api_namespace: str, assetlist_url: str):
         with open(asset_list_fp, "rt", encoding="utf8") as f:
             asset_list = dict(line.strip().split("\t") for line in f if line.strip())
 
-    asset_list_f = open(asset_list_fp, "at", encoding="utf8")
+    asset_list_f = open(asset_list_fp, "ab", buffering=0)
 
     asset_api = API(api_namespace)
     asset_list_o = asset_api.get(assetlist_url)
@@ -119,13 +119,7 @@ def update_assets(path: str, api_namespace: str, assetlist_url: str):
                 print(f"{i+1}/{len(TODO)} : {name}")
                 data = download_asset(asset_api, name, path_raw)
                 extract_asset(data, get_path(path_ext, name))
-                asset_list_f.write(f"{name}\t{ahash}\n")
-
-                if i % 10:
-                    # save current progress
-                    asset_list_f.close()
-                    asset_list_f = open(asset_list_fp, "at", encoding="utf8")
-            asset_list_f.close()
+                asset_list_f.write(f"{name}\t{ahash}\n".encode("utf8"))
     except KeyboardInterrupt as e:
         pass
     asset_list_f.close()
