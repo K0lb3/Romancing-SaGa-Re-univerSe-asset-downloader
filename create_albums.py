@@ -58,7 +58,7 @@ for album in albums.values():
     with open(os.path.join(album_folder, "info.txt"), "wt", encoding="utf8") as f:
         f.write(album["name"])
         f.write("\n")
-        f.write(album["flavor_text"])
+        f.write(album["flavor_text"].replace(". ", ".\n"))
         f.write("\n\ntracks:\n")
         for i, track in enumerate(sorted(album["tracks"], key = lambda item:item["sort_order"])):
             f.write(f"{i}. {track['name']} - {track['composer']}\n")
