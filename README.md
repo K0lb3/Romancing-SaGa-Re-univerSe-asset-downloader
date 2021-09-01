@@ -11,6 +11,7 @@ so all you have to do is execute the download_assets.py script after every updat
 
 - UnityPy 1.7.8
 - requests
+- acb-py (for the album creation/extraction)
 
 ```cmd
 pip install UnityPy==1.7.9
