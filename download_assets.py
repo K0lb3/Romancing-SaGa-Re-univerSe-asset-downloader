@@ -40,7 +40,9 @@ VERSIONS = [
 
 def main():
     for ver in VERSIONS:
+        print(f"Updating {ver[0]}")
         update_version(*ver)
+        print("\n\n")
 
 
 def update_version(version: str, host: str, apk: str, asset_host: str, qooapp_id: int):
@@ -58,6 +60,7 @@ def update_version(version: str, host: str, apk: str, asset_host: str, qooapp_id
 
     res = query_api_version(host, client_version_hash)
     if res.status_code == 400:
+        print("version data outdated, downloading the latest apk from QooApp")
         # fetch latest apk and extract the new client version hash
         update_apk_monobehaviours(path, qooapp_id)
         with open(game_settings_path, "rt", encoding="utf8") as f:
@@ -69,15 +72,21 @@ def update_version(version: str, host: str, apk: str, asset_host: str, qooapp_id
             print("Updated version hash seems to be invalid or outdated.")
             print("Try again in 2-3 hours.")
             return
+    elif res.status_code != 200:
+        print("Maintenance")
+        print(f"{res.status_code}: {res.text}")
+        return
 
     versions = res.json()
 
+    print("MasterData update")
     update_assets(
        path,
        f"{asset_host}/AssetBundles/{'en/' if version == 'gl' else ''}Android/masterdata/{versions['master_version']}",
        "masterdata",
     )
 
+    print("Assets Update")
     # normal assets
     update_assets(
         path,
