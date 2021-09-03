@@ -28,3 +28,8 @@ The results are stored by default in ``/assets``
 
 Some textures, like those of the characters, use color palettes.
 The script color_textures.py applies the given palette to each base image of the character.
+
+# Album Creation
+
+The script ``create_albums`` uses the masterdata to reconstruct the albums as shown in the game.
+[acb.py](https://github.com/summertriangle-dev/acb.py) and [HCADecoder](https://github.com/Nyagamon/HCADecoder) are used for the sound conversion. 
