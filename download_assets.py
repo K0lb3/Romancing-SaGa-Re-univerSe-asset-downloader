@@ -6,6 +6,7 @@ import os
 import json
 from lib import API, ASSETS, RES, extract_asset, update_apk_monobehaviours
 import io
+from multiprocessing import pool, cpu_count
 
 
 def toDict(tuples):
@@ -20,7 +21,7 @@ VERSIONS = [
         # game version, important for GameSettings.json
         "gl",
         # game host, hardcoded - il2cpp dumper -> stringliteral.json
-        "production-api.rs-eu.aktsk.com",
+        "production-api.rs-us.aktsk.com",
         # apk name, check the url of the playstore
         "com.square_enix.android_googleplay.RSRSWW",
         # asset host, hardcoded - il2cpp dumper -> stringliteral.json
@@ -78,7 +79,7 @@ def update_version(version: str, host: str, apk: str, asset_host: str, qooapp_id
         return
 
     versions = res.json()
-
+    print(versions)
     print("MasterData update")
     update_assets(
        path,
@@ -124,15 +125,22 @@ def update_assets(path: str, api_namespace: str, assetlist_url: str):
                     if name not in asset_list or asset_list[name] != ahash:
                         TODO.append((name, ahash))
         if TODO:
-            for i, (name, ahash) in enumerate(TODO):
+            tpool = pool.Pool(cpu_count())
+            func = lambda x: (asset_api, path_raw, path_ext, *x)
+            for i, (name, ahash) in enumerate(tpool.imap_unordered(update_asset, map(func, TODO))):
                 print(f"{i+1}/{len(TODO)} : {name}")
-                data = download_asset(asset_api, name, path_raw)
-                extract_asset(data, get_path(path_ext, name))
                 asset_list_f.write(f"{name}\t{ahash}\n".encode("utf8"))
+
     except KeyboardInterrupt as e:
         pass
     asset_list_f.close()
 
+
+def update_asset(args):
+    asset_api, path_raw, path_ext, name, ahash = args
+    data = download_asset(asset_api, name, path_raw)
+    extract_asset(data, get_path(path_ext, name))
+    return name, ahash
 
 def download_asset(asset_api, name, dir_path: str = ""):
     # dir : if set, save file into that dir
@@ -164,3 +172,4 @@ def query_api_version(host: str, version_hash: str):
 
 if __name__ == "__main__":
     main()
+    input()
