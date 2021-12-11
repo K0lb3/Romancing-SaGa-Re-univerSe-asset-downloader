@@ -4,6 +4,7 @@ from collections import Counter
 import zipfile
 import json
 from .paths import STRUCTS_PATH
+from UnityPy.enums import ClassIDType
 
 TYPES = [
     # Images
@@ -28,11 +29,11 @@ def extract_asset(inp, path):
     # make sure that Texture2Ds are at the end
     objs = sorted(
         (obj for obj in env.objects if obj.type.name in TYPES),
-        key=lambda x: 1 if x.type == "Texture2D" else 0,
+        key=lambda x: 1 if x.type == ClassIDType.Texture2D else 0,
     )
     # check how the path should be handled
     if len(objs) == 1 or (
-        len(objs) == 2 and objs[0].type == "Sprite" and objs[1].type == "Texture2D"
+        len(objs) == 2 and objs[0].type == ClassIDType.Sprite and objs[1].type == ClassIDType.Texture2D
     ):
         export_obj(objs[0], os.path.dirname(path), True)
     else:
@@ -59,12 +60,12 @@ def export_obj(obj, fp: str, append_name: bool = False) -> list:
 
     # streamlineable types
     export = None
-    if obj.type == "TextAsset":
+    if obj.type == ClassIDType.TextAsset:
         if not extension:
             extension = ".txt"
         export = data.script
 
-    elif obj.type == "Font":
+    elif obj.type == ClassIDType.Font:
         if data.m_FontData:
             extension = ".ttf"
             if data.m_FontData[0:4] == b"OTTO":
@@ -73,15 +74,15 @@ def export_obj(obj, fp: str, append_name: bool = False) -> list:
         else:
             return [obj.path_id]
 
-    elif obj.type == "Mesh":
+    elif obj.type == ClassIDType.Mesh:
         extension = ".obf"
         export = data.export().encode("utf8")
 
-    elif obj.type == "Shader":
+    elif obj.type == ClassIDType.Shader:
         extension = ".txt"
         export = data.export().encode("utf8")
 
-    elif obj.type == "MonoBehaviour":
+    elif obj.type == ClassIDType.MonoBehaviour:
         # The data structure of MonoBehaviours is custom
         # and is stored as nodes
         # If this structure doesn't exist,
@@ -100,9 +101,10 @@ def export_obj(obj, fp: str, append_name: bool = False) -> list:
                 if not script:
                     continue
                 script = script.read()
-                if script.m_AssemblyName != "Assembly-CSharp.dll":
+                try:
+                    nodes = [Fake(**x) for x in STRUCTS[script.m_AssemblyName][script.m_ClassName]]
+                except KeyError:
                     continue
-                nodes = [Fake(**x) for x in STRUCTS[script.m_ClassName]]
                 # adjust the name
                 name = (
                     f"{script.m_ClassName}-{data.name}"
@@ -129,7 +131,7 @@ def export_obj(obj, fp: str, append_name: bool = False) -> list:
                 f.write(export)
 
     # non-streamlineable types
-    if obj.type == "Sprite":
+    if obj.type == ClassIDType.Sprite:
         data.image.save(f"{fp}.png")
 
         return [
@@ -138,12 +140,12 @@ def export_obj(obj, fp: str, append_name: bool = False) -> list:
             getattr(data.m_RD.alphaTexture, "path_id", None),
         ]
 
-    elif obj.type == "Texture2D":
+    elif obj.type == ClassIDType.Texture2D:
         if not os.path.exists(fp) and data.m_Width:
             # textures can have size 0.....
             data.image.save(f"{fp}.png")
 
-    elif obj.type == "AudioClip":
+    elif obj.type == ClassIDType.AudioClip:
         samples = data.samples
         if len(samples) == 0:
             pass

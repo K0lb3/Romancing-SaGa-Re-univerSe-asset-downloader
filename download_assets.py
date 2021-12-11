@@ -1,13 +1,13 @@
 from urllib import request
 import requests
-import UnityPy  # 1.7.8
+import UnityPy  # 1.7.25F
 import re
 import os
 import json
 from lib import API, ASSETS, RES, extract_asset, update_apk_monobehaviours
 import io
 from multiprocessing import pool, cpu_count
-
+from UnityPy.enums import ClassIDType
 
 def toDict(tuples):
     return {key: val for key, val in tuples}
@@ -115,7 +115,7 @@ def update_assets(path: str, api_namespace: str, assetlist_url: str):
     try:
         TODO = []
         for obj in UnityPy.load(asset_list_o).objects:
-            if obj.type == "AssetBundleManifest":
+            if obj.type == ClassIDType.AssetBundleManifest:
                 d = obj.read_typetree()
                 names = toDict(d["AssetBundleNames"])
                 infos = toDict(d["AssetBundleInfos"])
