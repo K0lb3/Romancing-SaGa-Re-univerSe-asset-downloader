@@ -44,7 +44,7 @@ def extract_asset(inp, path):
 
 
 def export_obj(obj, fp: str, append_name: bool = False) -> list:
-    if obj.type not in TYPES:
+    if obj.type.name not in TYPES:
         return []
     if not STRUCTS:
         with open(STRUCTS_PATH, "rt", encoding="utf8") as f:
