@@ -93,36 +93,29 @@ def export_obj(obj, fp: str, append_name: bool = False) -> list:
             export = json.dumps(
                 obj.read_typetree(), indent=4, ensure_ascii=False
             ).encode("utf8", errors="surrogateescape")
-        else:  # TODO, try to use struct
-            for i in [1]:
-                # abuse that a finished loop calls else
-                # while a broken one doesn't
-                script = data.m_Script
-                if not script:
-                    continue
-                script = script.read()
-                try:
-                    nodes = [Fake(**x) for x in STRUCTS[script.m_AssemblyName][script.m_ClassName]]
-                except KeyError:
-                    continue
-                # adjust the name
-                name = (
-                    f"{script.m_ClassName}-{data.name}"
-                    if data.name
-                    else script.m_ClassName
-                )
-                if append_name:
-                    new_fp = os.path.join(os.path.dirname(fp), name)
-                    if len(new_fp) + len(extension) < 256:
-                        fp = new_fp
-                extension = ".json"
-                export = json.dumps(
-                    obj.read_typetree(nodes), indent=4, ensure_ascii=False
-                ).encode("utf8", errors="surrogateescape")
-                break
-            else:
-                extension = ".bin"
-                export = data.raw_data
+        else:
+            script = data.m_Script
+            if not script:
+                return [obj.path_id]
+            script = script.read()
+            try:
+                nodes = STRUCTS[script.m_AssemblyName][script.m_ClassName]
+            except KeyError:
+                return [obj.path_id]
+            # adjust the name
+            name = (
+                f"{script.m_ClassName}-{data.name}"
+                if data.name
+                else script.m_ClassName
+            )
+            if append_name:
+                new_fp = os.path.join(os.path.dirname(fp), name)
+                if len(new_fp) + len(extension) < 256:
+                    fp = new_fp
+            extension = ".json"
+            export = json.dumps(
+                obj.read_typetree(nodes), indent=4, ensure_ascii=False
+            ).encode("utf8", errors="surrogateescape")
 
     if export:
         fp = f"{fp}{extension}"
