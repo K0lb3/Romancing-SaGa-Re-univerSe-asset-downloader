@@ -21,7 +21,11 @@ def update_apk_monobehaviours(path: str, qooapp_id: int):
     env = UnityPy.Environment()
     zipf = ZipFile(apk_stream)
     for file in ["data.unity3d", "datapack.unity3d"]:
-        unity_f = zipf.open(f"assets/bin/Data/{file}")
+        file = f"assets/bin/Data/{file}"
+        if file not in zipf.namelist():
+            print("Missing file: ", file, "(so far unrelevant for JP)")
+            continue
+        unity_f = zipf.open(file)
         env.files[file] = env.load_file(unity_f)
         unity_f.close()
 
