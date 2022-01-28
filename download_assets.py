@@ -4,7 +4,7 @@ import UnityPy  # 1.7.25F
 import re
 import os
 import json
-from lib import API, ASSETS, RES, extract_asset, update_apk_monobehaviours
+from lib import API, ASSETS, RES, extract_asset, update_apk_monobehaviours, update_gamesettings
 import io
 from multiprocessing import pool, cpu_count
 from UnityPy.enums import ClassIDType
@@ -63,7 +63,7 @@ def update_version(version: str, host: str, apk: str, asset_host: str, qooapp_id
     if res.status_code == 400:
         print("version data outdated, downloading the latest apk from QooApp")
         # fetch latest apk and extract the new client version hash
-        update_apk_monobehaviours(path, qooapp_id)
+        update_gamesettings(path, qooapp_id)
         with open(game_settings_path, "rt", encoding="utf8") as f:
             game_settings = json.load(f)
         client_version_hash = game_settings[f"{version}Setting"]["clientVersionHash"]
