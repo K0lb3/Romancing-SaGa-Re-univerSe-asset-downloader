@@ -8,14 +8,14 @@ from .asset import export_obj
 from .paths import STRUCTS_PATH
 
 
-def update_gamesettings(path: str, qooapp_id: int):
+def update_gamesettings(path: str, appid: int):
     with open(STRUCTS_PATH, "rt", encoding="utf8") as f:
         STRUCTS = json.load(f)
 
     MONOS = os.path.join(path, "apk_monobehaviours")
     os.makedirs(MONOS, exist_ok=True)
 
-    apk = download_latest_apk(qooapp_id)
+    apk = download_apksupport(appid)
 
     # fetch unity data from apk
     apk_stream = io.BytesIO(apk)
@@ -47,11 +47,11 @@ def update_gamesettings(path: str, qooapp_id: int):
     apk_stream.close()
 
 
-def update_apk_monobehaviours(path: str, qooapp_id: int):
+def update_apk_monobehaviours(path: str, appid: int):
     MONOS = os.path.join(path, "apk_monobehaviours")
     os.makedirs(MONOS, exist_ok=True)
 
-    apk = download_latest_apk(qooapp_id)
+    apk = download_apksupport(appid)
     # store apk
     with open(os.path.join(path, "current.apk"), "wb") as f:
         f.write(apk)
@@ -82,74 +82,39 @@ def update_apk_monobehaviours(path: str, qooapp_id: int):
     apk_stream.close()
 
 
-def download_latest_apk(qooapp_id: int):
-    # download the latest apk from qooapp
-    # in this case the first split apk, which should usually work fine for Unity games
-    headers = {
-        "x-user-token": "38d46579e39a7dc70edf05c1ed75beab26fea8a7",
-        "accept": "application/json",
-        "content-type": "application/json; charset=utf-8",
-        "accept-encoding": "gzip",
-        "user-agent": "okhttp/3.12.0",
-    }
-    url = f"https://api.qoo-app.com/v10/apps/{qooapp_id}"
-    res = requests.get(url, headers=headers)
+def download_apksupport(appid: str) -> bytes:
+    import re
 
-    if res.status_code != 200:
-        return None
-
-    data = res.json()
-    if data["code"] != 200:
-        return None
-    data = data["data"]
-    if data.get("split_apks", []):
-        base = None
-        datapack = None
-        for item in data["split_apks"]:
-            if item["signature"].startswith("base"):
-                base = item
-                print(json.dumps(item, indent=4))
-            elif item["signature"].startswith("UnityDataAssetPack"):
-                datapack = item
-                print(json.dumps(item, indent=4))
-                break
-        if datapack:
-            return requests.get(datapack["url"]).content
-        else:
-            return requests.get(base["url"]).content
-
-    else:
-        return download_apk_via_pid(data["package_id"])
-
-
-def download_apk_via_pid(package_id: str) -> bytes:
-    # try all kinda of combinations of android versions and processors
-    query_args = {
-        # "supported_abis": "x86;x86_64;armeabi-v7a;arm64-v8a",
-        # "base_apk_version"	:	"0",
-        "sdk_version": "30",
-        # "base_apk_md5"	:	"null",
-        # "version_code"	:	"80200",
-        # "version_name"	:	"8.2.0",
-        # "os"	:	"android 3.9",
-        # "type"	:	"app",
-        # "token"	:	"38d46579e39a7dc70edf05c1ed75beab26fea8a7",
-        "android_id": "5892c8fbaa0c9611",
-    }
-    url = f"https://api.qoo-app.com/v6/apps/{package_id}/download"
-    res = requests.get(
-        url,
-        allow_redirects=False,
-        params=query_args,
-        headers={"user-agent": "QooApp 8.2.0", "device-id": "5892c8fbaa0c9611"},
+    html = requests.post(
+        url=f"https://apk.support/download-app/{appid}",
+        data=f"cmd=apk&pkg={appid}&arch=default&tbi=default&device_id=&model=default&language=en&dpi=480&av=default".encode(
+            "utf8"
+        ),
+        headers={
+            "sec-ch-ua": '"Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"',
+            "sec-ch-ua-platform": "Windows",
+            "sec-ch-ua-mobile": "?0",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36",
+            "accept": "*/*",
+            "origin": "https://apk.support",
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-dest": "empty",
+            f"referer": "https://apk.support/download-app/{appid}",
+            "accept-encoding": "gzip, deflate, br",
+            "accept-language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+            "pragma": "no-cache",
+            "cache-control": "no-cache",
+            "content-length": "112",
+            "content-type": "application/x-www-form-urlencoded",
+        },
+    ).text
+    apks = re.findall(
+        r"""<a rel="nofollow" href="(.+?.apk)">\s+?<span class.+?</span>(.+?.apk)</span>""",
+        html,
     )
-
-    location = res.headers.get("Location", None)
-    if not location:
-        print("Location error: ", package_id)
-        return None
-    if "com.qooapp.qoohelper" in location:
-        # TODO, retry with different specks, maybe split apk?
-        print("RIP")
+    for apk_url, apk_name in apks:
+        if "config" not in apk_name:
+            return requests.get(apk_url).content
     else:
-        return requests.get(location).content
+        raise Exception("couldn't find base apk found")
