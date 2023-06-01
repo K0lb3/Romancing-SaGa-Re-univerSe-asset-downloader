@@ -4,19 +4,31 @@ import json
 import io
 import os
 import UnityPy
-from .asset import export_obj
 from .paths import STRUCTS_PATH
+
+with open(STRUCTS_PATH, "rt", encoding="utf8") as f:
+    STRUCTS = json.load(f)
 
 
 def update_gamesettings(path: str, appid: int):
-    with open(STRUCTS_PATH, "rt", encoding="utf8") as f:
-        STRUCTS = json.load(f)
+    apks = download_apksupport(appid)
+    assert len(apks) > 0, "No apks found on apk.support"
 
+    for apk_url, apk_name in apks:
+        print("Downloading", apk_name)
+        apk = requests.get(apk_url).content
+        print("Trying to extract game settings")
+        if try_extract_game_settings(apk, path):
+            print("Success")
+            return
+        print("Failed")
+        raise Exception("Failed to update game settings")
+
+
+def try_extract_game_settings(apk: bytes, path: str):
     MONOS = os.path.join(path, "apk_monobehaviours")
-    os.makedirs(MONOS, exist_ok=True)
 
-    apk = download_apksupport(appid)
-
+    found = True
     # fetch unity data from apk
     apk_stream = io.BytesIO(apk)
     env = UnityPy.Environment()
@@ -42,44 +54,11 @@ def update_gamesettings(path: str, appid: int):
                     encoding="utf8",
                 ) as f:
                     json.dump(tree, f, indent=4, ensure_ascii=False)
+                    found = True
                 break
     zipf.close()
     apk_stream.close()
-
-
-def update_apk_monobehaviours(path: str, appid: int):
-    MONOS = os.path.join(path, "apk_monobehaviours")
-    os.makedirs(MONOS, exist_ok=True)
-
-    apk = download_apksupport(appid)
-    # store apk
-    with open(os.path.join(path, "current.apk"), "wb") as f:
-        f.write(apk)
-
-    # fetch unity data from apk
-    apk_stream = io.BytesIO(apk)
-    env = UnityPy.Environment()
-    zipf = ZipFile(apk_stream)
-    for file in ["data.unity3d", "datapack.unity3d"]:
-        file = f"assets/bin/Data/{file}"
-        if file not in zipf.namelist():
-            print("Missing file: ", file, "(so far unrelevant for JP)")
-            continue
-        unity_f = zipf.open(file)
-        env.files[file] = env.load_file(unity_f)
-        unity_f.close()
-
-    # extract monobehaviours from apk
-    for obj in env.objects:
-        if obj.type.name == "MonoBehaviour":
-            try:
-                export_obj(obj, MONOS, True)
-            except Exception as e:
-                pass
-                # print(f"Failed to extract obj {obj.path_id} - {e}")
-
-    zipf.close()
-    apk_stream.close()
+    return found
 
 
 def download_apksupport(appid: str) -> bytes:
@@ -113,8 +92,9 @@ def download_apksupport(appid: str) -> bytes:
         r"""<a rel="nofollow" href="(.+?.apk)">\s+?<span class.+?</span>(.+?.apk)</span>""",
         html,
     )
-    for apk_url, apk_name in apks:
-        if "config" not in apk_name:
-            return requests.get(apk_url).content
-    else:
-        raise Exception("couldn't find base apk found")
+    if len(apks) == 0:
+        # might be single apk
+        apk = re.search(r"""<li><a href="(.+?)">\s*<img src.*?>(.+?)\s*<""", html)
+        if apk:
+            return [apk.groups()]
+    return apks
