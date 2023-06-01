@@ -4,7 +4,7 @@ import UnityPy  # 1.7.25F
 import re
 import os
 import json
-from lib import API, ASSETS, RES, extract_asset, update_apk_monobehaviours, update_gamesettings
+from lib import API, ASSETS, RES, extract_asset, update_gamesettings
 import io
 from multiprocessing import pool, cpu_count
 from UnityPy.enums import ClassIDType
