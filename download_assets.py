@@ -61,9 +61,9 @@ def update_version(version: str, host: str, apk: str, asset_host: str, qooapp_id
 
     res = query_api_version(host, client_version_hash)
     if res.status_code == 400:
-        print("version data outdated, downloading the latest apk from QooApp")
+        print("version data outdated, downloading the latest apk from apk.support")
         # fetch latest apk and extract the new client version hash
-        update_gamesettings(path, qooapp_id)
+        update_gamesettings(path, apk)
         with open(game_settings_path, "rt", encoding="utf8") as f:
             game_settings = json.load(f)
         client_version_hash = game_settings[f"{version}Setting"]["clientVersionHash"]
