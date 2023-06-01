@@ -5,6 +5,7 @@ import zipfile
 import json
 from .paths import STRUCTS_PATH
 from UnityPy.enums import ClassIDType
+from UnityPy.classes.Object import NodeHelper
 
 TYPES = [
     # Images
@@ -33,27 +34,41 @@ def extract_asset(inp, path):
     )
     # check how the path should be handled
     if len(objs) == 1 or (
-        len(objs) == 2 and objs[0].type == ClassIDType.Sprite and objs[1].type == ClassIDType.Texture2D
+        len(objs) == 2
+        and objs[0].type == ClassIDType.Sprite
+        and objs[1].type == ClassIDType.Texture2D
     ):
-        export_obj(objs[0], os.path.dirname(path), True)
+        try:
+            export_obj(objs[0], os.path.dirname(path), True)
+        except Exception as e:
+            print("Failed to export", objs[0].type.name, objs[0].path_id, e)
     else:
         used = []
         for obj in objs:
             if obj.path_id not in used:
-                used.extend(export_obj(obj, path, True))
+                try:
+                    used.extend(export_obj(obj, path, True))
+                except Exception as e:
+                    print("Failed to export", obj.type.name, obj.path_id, e)
 
 
 def export_obj(obj, fp: str, append_name: bool = False) -> list:
     if obj.type.name not in TYPES:
         return []
+
     if not STRUCTS:
         with open(STRUCTS_PATH, "rt", encoding="utf8") as f:
             STRUCTS.update(json.load(f))
 
     data = obj.read()
+
+    if isinstance(data, NodeHelper) and data.type != ClassIDType.MonoBehaviour:
+        return []
+
     if append_name:
+        name = getattr(data, "name", getattr(data, "m_Name", None))
         fp = os.path.join(
-            fp, data.name if data.name else f"{data.type.name}-{obj.path_id}"
+            fp, name if name is not None else f"{data.type.name}-{obj.path_id}"
         )
     name, extension = os.path.splitext(fp)
     os.makedirs(os.path.dirname(fp), exist_ok=True)
@@ -78,9 +93,9 @@ def export_obj(obj, fp: str, append_name: bool = False) -> list:
         extension = ".obf"
         export = data.export().encode("utf8")
 
-    elif obj.type == ClassIDType.Shader:
-        extension = ".txt"
-        export = data.export().encode("utf8")
+    # elif obj.type == ClassIDType.Shader:
+    #    extension = ".txt"
+    #    export = data.export().encode("utf8")
 
     elif obj.type == ClassIDType.MonoBehaviour:
         # The data structure of MonoBehaviours is custom
@@ -104,9 +119,7 @@ def export_obj(obj, fp: str, append_name: bool = False) -> list:
                 return [obj.path_id]
             # adjust the name
             name = (
-                f"{script.m_ClassName}-{data.name}"
-                if data.name
-                else script.m_ClassName
+                f"{script.m_ClassName}-{data.name}" if data.name else script.m_ClassName
             )
             if append_name:
                 new_fp = os.path.join(os.path.dirname(fp), name)
@@ -156,4 +169,3 @@ def export_obj(obj, fp: str, append_name: bool = False) -> list:
 class Fake:
     def __init__(self, **kwargs) -> None:
         self.__dict__.update(**kwargs)
-
