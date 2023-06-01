@@ -47,6 +47,7 @@ def try_extract_game_settings(apk: bytes, path: str):
         if obj.type.name == "MonoBehaviour":
             mb = obj.read()
             if mb.name == "GameSettings":
+                os.makedirs(MONOS, exist_ok=True)
                 tree = obj.read_typetree(STRUCTS["Assembly-CSharp.dll"]["GameSettings"])
                 with open(
                     os.path.join(MONOS, "GameSettings-GameSettings.json"),
